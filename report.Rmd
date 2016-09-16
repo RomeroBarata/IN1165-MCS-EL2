@@ -1,7 +1,7 @@
 ---
 title: "2016.2 Multiple Classifier Systems - Exercise List 2"
 author: "Romero Barata"
-date: "September 14, 2016"
+date: "September 16, 2016"
 output: 
   html_document: 
     toc: yes
@@ -9,6 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+knitr::read_chunk("main.R", labels = c("Q3"), from = c(1))
 ```
 
 ## Question 01
@@ -27,7 +28,7 @@ Suitable metrics to compare the pools would be their accuracies and diversities,
 ## Question 02
 <center>![](figures/q2-architecture.png)</center>
 
-The proposed method is a greed procedure where the best subset of classifiers from the current pool is chosen at each step. It has two parameters: `k`, the number of subsets generated at each step, and `p`, the size reduction (in percent) relative to the size of the original pool at each step.
+The proposed method is a greedy procedure where the best subset of classifiers from the current pool is chosen at each step. It has two parameters: `k`, the number of subsets generated at each step, and `p`, the size reduction (in percent) relative to the size of the original pool at each step.
 
 In greater detail, the procedure works as follows:
 
@@ -50,3 +51,24 @@ pima_data <- read_csv(file.path("data", "pima.csv"),
 DT::datatable(pima_data, class = "compact")
 ```
 
+Bagging was used to generate the initial pool of classifiers, and a Decision Tree was chosen as the base classifier.
+
+The experimentation consisted of varying the `p` parameter of the `EPIC` algorithm, to select subsets of different sizes, and compare the error of the subensemble against the error of the original ensemble. The number of classifiers in the original pool was set to $200$, and EPIC's `p` parameter ranged from `5%` to `95%` in steps of `5%`.
+
+To make a fair comparison of the results, for each value of `p` a five-fold cross-validation procedure repeated two times was performed, and the averages of the original ensemble and the pruned ensemble on the testing sets were computed. To prune the ensemble, $20\%$ of the training data was used as the pruning data. Hence, for the aforementioned cv-procedure, in each round $20\%$ of the data was used for testing, $18\%$ was used for pruning, and $62\%$ was used for training. The following graph shows the results obtained.
+
+```{r Q3, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}
+```
+
+```{r q3-results, message=FALSE, warning=FALSE, out.width='100%'}
+library(plotly)
+library(RColorBrewer)
+pal <- brewer.pal(nlevels(results_tidy$measure), "Set1")
+pl <- plot_ly(results_tidy, x = P, y = 1-value, color = measure, colors = pal)
+pl <- layout(pl, 
+             xaxis = list(title = "Percent of classifiers chosen by EPIC"), 
+             yaxis = list(title = "Error"))
+pl
+```
+
+As it can be seen, pruning the original pool helped reducing the ensemble error in most cases, achieving its minimum error with a pool having $10\%$ of the original size. The error trend is to increase with the size of the pruned pool, showing that for this particular problem a small pool is desired. Even though care was taken to make sure the same cv-splits happened for each value of `p`, the bootstrap samples of the bagging algorithm may differ and generate different error values for the original ensembles, as happened in $5\%$.
